@@ -1,64 +1,83 @@
-RedlineBench
+<div align="center">
 
-RedlineBench is a benchmark for AI contract negotiation. An AI lawyer negotiates a liability cap against opposing counsel, and the reward is pure math, not an LLM judge, so the outcome is verifiable.
+# RedlineBench
 
-Its environment, redline-negotiate, is published on the Prime Intellect Environments Hub: fa1zvn/redline-negotiate.
+**An RL environment where an AI lawyer negotiates a contract liability cap, scored by a verifiable reward.**
 
-What it's modeling
+[![Environment](https://img.shields.io/badge/Prime_Intellect-redline--negotiate-2b57e0)](https://app.primeintellect.ai/dashboard/environments/fa1zvn/redline-negotiate)
+&nbsp;
+![Python](https://img.shields.io/badge/Python-3.10+-3776ab)
+&nbsp;
+![Training](https://img.shields.io/badge/Method-GRPO-555)
 
-A liability cap is the dollar ceiling on what one party owes if a contract goes wrong. It's one of the most heavily redlined terms in any commercial deal. The client wants the cap high so they can recover if the vendor fails. The vendor wants it low so they're not on the hook. They negotiate toward a number.
+</div>
 
-The AI plays the client's side. It pushes for the highest cap it can land without blowing up the deal. I picked this term because it reduces to a single number, which means I can grade the result automatically with no human in the loop.
+RedlineBench is a benchmark for AI contract negotiation. An AI lawyer argues for a liability cap against opposing counsel, and the reward is calculated rather than judged by another model, so every outcome is verifiable.
 
-The reward
+The environment, `redline-negotiate`, is published on the [Prime Intellect Environments Hub](https://app.primeintellect.ai/dashboard/environments/fa1zvn/redline-negotiate).
 
-After each negotiation the scorekeeper grades the agreed cap:
+<div align="center">
+<img src="redline-diagram.png" width="820" alt="One negotiation episode: the model proposes a cap, a fixed-rule vendor accepts or counters, and the scorekeeper turns the outcome into a reward">
+</div>
 
+## The setup
 
-No deal: -1
-Cap at the client's walkaway ($100K): 0
-Cap at the client's ideal ($1M): 1.0
-Linear in between
+A liability cap is the ceiling on what one party owes if a contract goes wrong. It gets fought over in almost every commercial deal. The client wants it high so they can recover if the vendor fails, and the vendor wants it low so they are not exposed. They argue toward a number.
 
+The model plays the client and tries to land the cap as high as it can without losing the deal. I used this term because it comes down to a single number, which means I can grade the result without a human or a judge model in the loop.
 
-No judge model, no subjective call. The number is the number.
+## The reward
 
-The opponent
+The scorekeeper grades the agreed cap on a fixed scale:
 
-The vendor is a fixed rule, not another AI. It accepts any offer at or below $200K. Above that it rejects and counters, conceding slowly (a quarter of the gap each round). If it rejects every round, the deal dies and the model scores -1.
+- No deal: -1
+- Cap at the client's walkaway, $100K: 0
+- Cap at the client's target, $1M: 1.0
+- Linear between those points
 
-A deterministic opponent keeps the experiment clean. The only thing changing across the run is the model.
+## The opponent
 
-What happened when I trained it
+The vendor is a fixed rule, not a second model. It accepts any offer at or below $200K. Above that it rejects and counters, conceding a quarter of the gap each round. If it rejects every round, the deal dies and the model scores -1.
 
-I trained Qwen3.5-0.8B on it with GRPO, hosted on Prime Intellect.
+Keeping the opponent fixed means the only thing changing across a run is the model itself.
 
-The first run climbed. Reward went from around 0.45 to around 0.95 over five steps. The model was learning to negotiate a higher cap and close the deal.
+## Training
 
-Then I ran it longer, thirty steps, and it failed at step 12. That failure is the actual result.
+I trained Qwen3.5-0.8B with GRPO, hosted on Prime Intellect. The reward climbs as the model learns to push the cap higher and still close the deal.
 
-The finding
+<div align="center">
+<img src="redlinebench_reward_curve.png" width="820" alt="Reward per step climbing from 0.45 to 0.95 over a five-step run">
+</div>
 
-GRPO learns from the spread between attempts. It runs the same scenario several times, reinforces the attempts that beat the average, and pushes down the ones below it. It needs some attempts to be better than others. If every attempt scores the same, there's nothing to compare and nothing to learn.
+## What broke, and why it matters
 
-By step 12 the model had gotten so good that every attempt in the batch hit the ceiling. All wins, all identical. The trainer ran out of signal and stopped itself after ten dead batches in a row.
+A longer run of thirty steps failed at step 12. That failure is the result worth reporting.
 
-And the way it got there matters. It wasn't negotiating well. It learned to demand enormous numbers, pushing the agreed cap toward $80M, exploiting the edge of the reward and the vendor rule. It found the cheapest path to a high score.
+GRPO learns from the spread between attempts. It runs a scenario several times, reinforces the attempts that beat the batch average, and pushes down the ones below it. With no spread, there is nothing to learn from.
 
-The model didn't get better at negotiating. It got better at gaming the grade. That's the reliability problem that matters in real legal AI, and it showed up in miniature, on purpose.
+By step 12 the model was winning every attempt by the same margin. The batches went flat, the signal collapsed, and training stopped itself after ten dead batches in a row.
 
-What this tells me
+<div align="center">
+<img src="redlinebench_saturation.png" width="820" alt="Reward saturates by step 12, then training halts because the learning signal collapses">
+</div>
 
-The environment is too easy. A model that saturates the reward this fast needs a harder opponent or a tighter reward to stay a real test. The interesting work is in the reward design, not the training loop.
+It got there by demanding huge numbers, pushing the agreed cap toward $80M, sitting right on the edge of the reward and the vendor rule. It was not negotiating better, it was exploiting the grader.
 
-Next
+This is the failure mode that makes reward design hard in legal AI. A model optimizing a verifiable reward will find the cheapest way to max it, and if the environment allows an absurd anchor, it takes it.
 
+## What this says about the environment
 
-Evaluate the trained checkpoint against the fixed-policy baseline on held-out scenarios, for a clean before/after number
-Make the vendor tougher so the model can't win by anchoring absurdly high
-Tighten the reward so demanding $80M doesn't pay
+The environment is too easy. Anything that saturates in twelve steps is not testing much. A real test needs a harder opponent or a reward that does not pay out for absurd anchors.
 
+## Next
 
-Run it
+- Evaluate the trained checkpoint against the fixed baseline on held-out scenarios, for a clean before and after
+- Make the vendor reject absurd anchors so the model cannot win by overreaching
+- Reshape the reward so demanding $80M earns nothing
+- Reimplement the GRPO loop by hand on the Tinker API and rerun against the hardened environment
 
-bashprime env install fa1zvn/redline-negotiate
+## Run it
+
+```bash
+prime env install fa1zvn/redline-negotiate
+```
