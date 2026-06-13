@@ -17,7 +17,7 @@ RedlineBench is a benchmark for AI contract negotiation. An AI lawyer argues for
 The environment, `redline-negotiate`, is published on the [Prime Intellect Environments Hub](https://app.primeintellect.ai/dashboard/environments/fa1zvn/redline-negotiate).
 
 <div align="center">
-<img src="redline-diagram.png" width="820" alt="One negotiation episode: the model proposes a cap, a fixed-rule vendor accepts or counters, and the scorekeeper turns the outcome into a reward">
+<img src="https://raw.githubusercontent.com/fa1zn/redlinebench/main/redline-diagram.png" width="820" alt="One negotiation episode: the model proposes a cap, a fixed-rule vendor accepts or counters, and the scorekeeper turns the outcome into a reward">
 </div>
 
 ## The setup
@@ -46,7 +46,7 @@ Keeping the opponent fixed means the only thing changing across a run is the mod
 I trained Qwen3.5-0.8B with GRPO, hosted on Prime Intellect. The reward climbs as the model learns to push the cap higher and still close the deal.
 
 <div align="center">
-<img src="redlinebench_reward_curve.png" width="820" alt="Reward per step climbing from 0.45 to 0.95 over a five-step run">
+<img src="https://raw.githubusercontent.com/fa1zn/redlinebench/main/redlinebench_reward_curve.png" width="820" alt="Reward per step climbing from 0.45 to 0.95 over a five-step run">
 </div>
 
 ## What broke, and why it matters
@@ -58,7 +58,7 @@ GRPO learns from the spread between attempts. It runs a scenario several times, 
 By step 12 the model was winning every attempt by the same margin. The batches went flat, the signal collapsed, and training stopped itself after ten dead batches in a row.
 
 <div align="center">
-<img src="redlinebench_saturation.png" width="820" alt="Reward saturates by step 12, then training halts because the learning signal collapses">
+<img src="https://raw.githubusercontent.com/fa1zn/redlinebench/main/redlinebench_saturation.png" width="820" alt="Reward saturates by step 12, then training halts because the learning signal collapses">
 </div>
 
 It got there by demanding huge numbers, pushing the agreed cap toward $80M, sitting right on the edge of the reward and the vendor rule. It was not negotiating better, it was exploiting the grader.
