@@ -61,4 +61,4 @@ Tighten the reward so demanding $80M doesn't pay
 
 Run it
 
-bash prime env install fa1zvn/redline-negotiate
+bashprime env install fa1zvn/redline-negotiate
