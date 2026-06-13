@@ -17,7 +17,7 @@ RedlineBench is a benchmark for AI contract negotiation. An AI lawyer argues for
 The environment, `redline-negotiate`, is published on the [Prime Intellect Environments Hub](https://app.primeintellect.ai/dashboard/environments/fa1zvn/redline-negotiate).
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/fa1zn/redlinebench/main/redline-diagram.png" width="820" alt="One negotiation episode: the model proposes a cap, a fixed-rule vendor accepts or counters, and the scorekeeper turns the outcome into a reward">
+<img src="https://raw.githubusercontent.com/fa1zn/redlinebench/master/redline-diagram.png" width="820" alt="One negotiation episode: the model proposes a cap, a fixed-rule vendor accepts or counters, and the scorekeeper turns the outcome into a reward">
 </div>
 
 ## The setup
